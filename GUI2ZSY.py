@@ -25,10 +25,10 @@ class MY_GUI(object):
         super(MY_GUI, self).__init__()
         self.init_window_name = init_window_name
 
-        self.init_window_name.title("文本处理工具_v1.2")  # 窗口名
-        self.init_window_name.geometry('400x500+10+10')    #290 160为窗口大小，+10 +10 定义窗口弹出时的默认展示位置
+        self.init_window_name.title("文本处理工具_v1.2")      # 窗口名
+        self.init_window_name.geometry('400x500+10+10')     # 290 160为窗口大小，+10 +10 定义窗口弹出时的默认展示位置
         # self.init_window_name.geometry('1068x681+10+10')
-        self.init_window_name["bg"] = "blue"              # 窗口背景色，其他背景色见：blog.csdn.net/chl0000/article/details/7657887
+        self.init_window_name["bg"] = "blue"                # 窗口背景色，其他背景色见：blog.csdn.net/chl0000/article/details/7657887
         # self.init_window_name.attributes("-alpha",0.9)    # 虚化，值越小虚化程度越高
 
     # 设置窗口
@@ -69,42 +69,58 @@ class MY_GUI(object):
 
         # 文本框
         str2DNN = TK.StringVar()
-        str2DNN.set('Default:DNN')
+        str2DNN.set('DNN')              # 默认 DNN
         self.name2DNN_Text = TK.Entry(self.init_window_name, width=20, textvariable=str2DNN)  # 网络模型选择框
         self.name2DNN_Text.grid(row=0, column=2)
 
         str2Hidden = TK.StringVar()
-        str2Hidden.set('For example:(5,10,20,5)')
+        str2Hidden.set('(5,10,20,5)')   # 是一个列表或者元组
         self.hiddens_Text = TK.Entry(self.init_window_name, width=20, textvariable=str2Hidden)    # 隐藏层神经单元列表输入框
         self.hiddens_Text.grid(row=1, column=2)
 
         str2act_In = TK.StringVar()
-        str2act_In.set('Default:ReLU')
-        self.actIn_Text = TK.Entry(self.init_window_name, width=20, textvariable=str2act_In)  # 原始数据录入框
+        str2act_In.set('ReLU')          # 默认 ReLU
+        self.actIn_Text = TK.Entry(self.init_window_name, width=20, textvariable=str2act_In)  # 输入层的激活函数
         self.actIn_Text.grid(row=2, column=2)
 
-        self.actHidden_Text = TK.Entry(self.init_window_name, width=20)  # 原始数据录入框
+        str2act_Hidden = TK.StringVar()
+        str2act_Hidden.set('ReLU')      # 默认 ReLU
+        self.actHidden_Text = TK.Entry(self.init_window_name, width=20, textvariable=str2act_Hidden)  # 隐藏层的激活函数
         self.actHidden_Text.grid(row=3, column=2)
 
-        self.actOut_Text = TK.Entry(self.init_window_name, width=20)  # 原始数据录入框
+        str2act_Out = TK.StringVar()
+        str2act_Out.set('linear')       # 默认 linear
+        self.actOut_Text = TK.Entry(self.init_window_name, width=20, textvariable=str2act_Out)  # 输出层的激活函数
         self.actOut_Text.grid(row=4, column=2)
 
-        self.dim2in_Text = TK.Entry(self.init_window_name, width=20)  # 原始数据录入框
+        int2in_dim = TK.IntVar()
+        int2in_dim.set(2)              # 默认 2
+        self.dim2in_Text = TK.Entry(self.init_window_name, width=20, textvariable=int2in_dim)  # 输入维度
         self.dim2in_Text.grid(row=5, column=2)
 
-        self.dim2out_Text = TK.Entry(self.init_window_name, width=20)  # 原始数据录入框
+        int2out_dim = TK.IntVar()
+        int2out_dim.set(1)             # 默认 1
+        self.dim2out_Text = TK.Entry(self.init_window_name, width=20, textvariable=int2out_dim)  # 输出维度
         self.dim2out_Text.grid(row=6, column=2)
 
-        self.maxEpoch_Text = TK.Entry(self.init_window_name, width=20)  # 原始数据录入框
+        int2Max_Epoch = TK.IntVar()
+        int2Max_Epoch.set(10000)      # 默认 10000
+        self.maxEpoch_Text = TK.Entry(self.init_window_name, width=20, textvariable=int2Max_Epoch)  # 最大迭代次数
         self.maxEpoch_Text.grid(row=7, column=2)
 
-        self.BatchSize_Text = TK.Entry(self.init_window_name, width=20)  # 原始数据录入框
+        int2BatchSize = TK.IntVar()
+        int2BatchSize.set(16)      # 默认 10000
+        self.BatchSize_Text = TK.Entry(self.init_window_name, width=20, textvariable=int2BatchSize)  # 批量大小
         self.BatchSize_Text.grid(row=8, column=2)
 
-        self.learning_rate_Text = TK.Entry(self.init_window_name, width=20)  # 原始数据录入框
+        double2lr = TK.DoubleVar()
+        double2lr.set(0.01)  # 默认 10000
+        self.learning_rate_Text = TK.Entry(self.init_window_name, width=20, textvariable=double2lr)  # 学习率
         self.learning_rate_Text.grid(row=9, column=2)
 
-        self.decay2lr_Text = TK.Entry(self.init_window_name, width=20)  # 原始数据录入框
+        double2lr_decay = TK.DoubleVar()
+        double2lr_decay.set(0.001)  # 默认 10000
+        self.decay2lr_Text = TK.Entry(self.init_window_name, width=20, textvariable=double2lr_decay)  # 学习率衰减
         self.decay2lr_Text.grid(row=10, column=2)
 
         self.button2Start = TK.Button(self.init_window_name, text='开始训练', command=self.get_print_log_parameters)
@@ -159,10 +175,17 @@ class MY_GUI(object):
             log_string('Input activate function for network: %s\n' % '[Sin;Cos]', log_fileout)
         else:
             log_string('Input activate function for network: %s\n' % str(self.actIn_Text.get()), log_fileout)
-        log_string('Hidden activate function for Normal-part network: %s\n' % str(self.actHidden_Text.get()), log_fileout)
+        log_string('Hidden activate function for network: %s\n' % str(self.actHidden_Text.get()), log_fileout)
+        log_string('Output activate function for network: %s\n' % str(self.actOut_Text.get()), log_fileout)
+
+        log_string('The dim for input: %s\n' % str(self.dim2in_Text.get()), log_fileout)
+
+        log_string('The dim for output: %s\n' % str(self.dim2out_Text.get()), log_fileout)
 
         log_string('Init learning rate: %s\n' % str(self.learning_rate_Text.get()), log_fileout)
         log_string('Decay to learning rate: %s\n' % str(self.decay2lr_Text.get()), log_fileout)
+
+        log_string('Max epoch: %s\n' % str(self.maxEpoch_Text.get()), log_fileout)
 
         log_string('Batch-size: %s\n' % str(self.BatchSize_Text.get()), log_fileout)
 
