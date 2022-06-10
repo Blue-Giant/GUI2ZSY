@@ -75,7 +75,8 @@ class MY_GUI(object):
         self.name2DNN_Text = TK.OptionMenu(self.init_window, self.str2DNN, 'DNN', 'MscaleDNN', 'FourierDNN')  # 网络模型选择框
         self.name2DNN_Text.grid(row=0, column=2)
 
-        str_list2act = ['ReLU', 'Leaky_ReLU', 'ELU', 'softplus', 'Tanh', 'Sin', 'sinAddcos', 's2ReLU', 'sReLU', 'mish', 'GELU', 'gauss', 'gcu', 'linear']
+        str_list2act = ['ReLU', 'Leaky_ReLU', 'ELU', 'softplus', 'Tanh', 'Sin', 'sinAddcos', 's2ReLU', 'sReLU', 'mish',
+                        'GELU', 'MGELU', 'gauss', 'gcu', 'linear']
         self.str2act_In = TK.StringVar(self.init_window)
         self.str2act_In.set('ReLU')               # 默认 ReLU
         self.actIn_Text = TK.OptionMenu(self.init_window, self.str2act_In, *str_list2act)  # 输入层的激活函数
@@ -92,7 +93,7 @@ class MY_GUI(object):
         self.actOut_Text.grid(row=3, column=2)
 
         self.str2Hidden = TK.StringVar()
-        self.str2Hidden.set([200, 500, 100, 20])  # 是一个列表或者元组
+        self.str2Hidden.set('(200, 500, 100, 20)')  # 是一个列表或者元组
         self.hiddens_Text = TK.Entry(self.init_window, width=20, textvariable=self.str2Hidden)  # 隐藏层神经单元列表输入框
         self.hiddens_Text.grid(row=5, column=2)
 
@@ -212,9 +213,15 @@ class MY_GUI(object):
                 # print('record_list:', record_list)
             elif str2num == ',':
                 list2hidden.append(int(''.join(record_list)))
+                # print('record_list for douhao:', record_list)
                 record_list.clear()
             elif str2num == ')':
                 list2hidden.append(int(''.join(record_list)))
+                # print('record_list for right ):', record_list)
+                record_list.clear()
+            elif str2num is None:
+                list2hidden.append(int(''.join(record_list)))
+                # print('record_list for end:', record_list)
                 record_list.clear()
         record_list.clear()
 
