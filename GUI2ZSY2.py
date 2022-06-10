@@ -21,29 +21,8 @@ def log_string(out_str, log_out):
     # 一般情况下，文件关闭后会自动刷新缓冲区，但有时你需要在关闭前刷新它，这时就可以使用 flush() 方法。
 
 
-class DNN2ZSY(object):
-    def __init__(self, input_dim=1, out_dim=1, hidden_list=None, Model_name='DNN', actIn_name='tanh',
-                 actHidden_name='tanh', actOut_name='linear', type2numeric='float32', sFourier=1.0):
-        super(DNN2ZSY, self).__init__()
-        if 'DNN' == str.upper(Model_name):
-            self.DNN2Normal = DNN_Class_base.Pure_Dense_Net(
-                indim=input_dim, outdim=out_dim, hidden_units=hidden_list, name2Model=Model_name,
-                actName2in=actIn_name, actName=actHidden_name, actName2out=actOut_name,
-                type2float=type2numeric, scope2W='W_Normal', scope2B='B_Normal')
-        elif 'SCALE_DNN' == str.upper(Model_name):
-            self.DNN2Normal = DNN_Class_base.Dense_ScaleNet(
-                indim=input_dim, outdim=out_dim, hidden_units=hidden_list, name2Model=Model_name,
-                actName2in=actIn_name, actName=actHidden_name, actName2out=actOut_name,
-                type2float=type2numeric, scope2W='W_Normal', scope2B='B_Normal', repeat_high_freq=False)
-        elif 'FOURIER_DNN' == str.upper(Model_name):
-            self.DNN2Normal = DNN_Class_base.Dense_FourierNet(
-                indim=input_dim, outdim=out_dim, hidden_units=hidden_list, name2Model=Model_name,
-                actName2in=actIn_name, actName=actHidden_name, actName2out=actOut_name,
-                type2float=type2numeric, scope2W='W_Normal', scope2B='B_Normal', repeat_high_freq=False)
-
-
 class MY_GUI(object):
-    def __init__(self, init_window):
+    def __init__(self, init_window, type2numeric='float32'):
         super(MY_GUI, self).__init__()
         self.init_window = init_window
 
@@ -52,6 +31,7 @@ class MY_GUI(object):
         # self.init_window.geometry('1068x681+10+10')
         self.init_window["bg"] = "blue"                     # 窗口背景色，其他背景色见：blog.csdn.net/chl0000/article/details/7657887
         self.init_window.attributes("-alpha", 0.75)          # 虚化，值越小虚化程度越高
+        self.type2numeric = type2numeric
 
     # 设置窗口
     def set_init_window(self):
@@ -238,21 +218,41 @@ class MY_GUI(object):
                 record_list.clear()
         record_list.clear()
 
-        print(type(list2hidden))
-        print('list2hidden:', list2hidden)
+        # print(type(list2hidden))
+        # print('list2hidden:', list2hidden)
 
-        self.DNN = DNN2ZSY(input_dim=self.int2in_dim.get(), out_dim=self.int2out_dim.get(),
-                           hidden_list=list2hidden, Model_name=name2model, actIn_name=self.str2act_In.get(),
-                           actHidden_name=self.str2act_Hidden.get(), actOut_name=self.str2act_Out.get(),
-                           type2numeric='float32', sFourier=1.0)
+        if self.type2numeric == 'float32':
+            self.float_type = tf.float32
+        elif self.type2numeric == 'float64':
+            self.float_type = tf.float64
+        elif self.type2numeric == 'float16':
+            self.float_type = tf.float16
+
+        if 'DNN' == str.upper(name2model):
+            self.DNN = DNN_Class_base.Pure_Dense_Net(
+                indim=self.int2in_dim.get(), outdim=self.int2out_dim.get(), hidden_units=list2hidden, name2Model=name2model,
+                actName2in=self.str2act_In.get(), actName=self.str2act_Hidden.get(), actName2out=self.str2act_Out.get(),
+                type2float=self.type2numeric, scope2W='Ws', scope2B='Bs')
+        elif 'SCALE_DNN' == str.upper(name2model) or 'MSCALEDNN' == str.upper(name2model):
+            self.DNN = DNN_Class_base.Dense_ScaleNet(
+                indim=self.int2in_dim.get(), outdim=self.int2out_dim.get(), hidden_units=list2hidden, name2Model=name2model,
+                actName2in=self.str2act_In.get(), actName=self.str2act_Hidden.get(), actName2out=self.str2act_Out.get(),
+                type2float=self.type2numeric, scope2W='Ws', scope2B='Bs', repeat_high_freq=False)
+        elif 'FOURIER_DNN' == str.upper(name2model) or 'FOURIERDNN' == str.upper(name2model):
+            self.DNN = DNN_Class_base.Dense_FourierNet(
+                indim=self.int2in_dim.get(), outdim=self.int2out_dim.get(), hidden_units=list2hidden, name2Model=name2model,
+                actName2in=self.str2act_In.get(), actName=self.str2act_Hidden.get(), actName2out=self.str2act_Out.get(),
+                type2float=self.type2numeric, scope2W='Ws', scope2B='Bs', repeat_high_freq=False)
 
     def train_model(self):
         print('Train model')
+        freqs = [1, 2, 3, 4, 5, 6, 7, 8, 9]
         global_steps = tf.compat.v1.Variable(0, trainable=False)
         with tf.device('/gpu:%s' % (0)):
             with tf.compat.v1.variable_scope('vscope', reuse=tf.compat.v1.AUTO_REUSE):
                 X_it = tf.compat.v1.placeholder(tf.float32, name='X_it', shape=[None, self.dim2in_Text.get()])  # * 行 1 列
                 in_learning_rate = tf.compat.v1.placeholder_with_default(input=1e-5, shape=[], name='lr')
+                y_out = self.DNN(X_it, scale=freqs, sFourier=1.0)
                 print('------Train model------')
 
     def evalue_model(self):
