@@ -23,8 +23,7 @@ def log_string(out_str, log_out):
 
 class DNN2ZSY(object):
     def __init__(self, input_dim=1, out_dim=1, hidden_list=None, Model_name='DNN', actIn_name='tanh',
-                 actHidden_name='tanh', actOut_name='linear', type2numeric='float32', freqs=None,
-                 sFourier2Normal=1.0):
+                 actHidden_name='tanh', actOut_name='linear', type2numeric='float32', sFourier=1.0):
         super(DNN2ZSY, self).__init__()
         if 'DNN' == str.upper(Model_name):
             self.DNN2Normal = DNN_Class_base.Pure_Dense_Net(
@@ -245,9 +244,7 @@ class MY_GUI(object):
         self.DNN = DNN2ZSY(input_dim=self.int2in_dim.get(), out_dim=self.int2out_dim.get(),
                            hidden_list=list2hidden, Model_name=name2model, actIn_name=self.str2act_In.get(),
                            actHidden_name=self.str2act_Hidden.get(), actOut_name=self.str2act_Out.get(),
-                           type2numeric='float32',
-                           freqs=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-                           sFourier2Normal=1.0)
+                           type2numeric='float32', sFourier=1.0)
 
     def train_model(self):
         print('Train model')
@@ -263,9 +260,9 @@ class MY_GUI(object):
 
 
 if __name__ == '__main__':
-    init_window = TK.Tk()  # 实例化出一个父窗口
-    ZMJ_PORTAL = MY_GUI(init_window)
-    # 设置根窗口默认属性
-    ZMJ_PORTAL.set_init_window()
+    gui_window = TK.Tk()              # 实例化出一个父窗口
+    ZMJ_PORTAL = MY_GUI(gui_window)
 
-    init_window.mainloop()  # 父窗口进入事件循环，可以理解为保持窗口运行，否则界面不展示
+    ZMJ_PORTAL.set_init_window()      # 设置根窗口默认属性
+
+    gui_window.mainloop()             # 父窗口进入事件循环，可以理解为保持窗口运行，否则界面不展示
