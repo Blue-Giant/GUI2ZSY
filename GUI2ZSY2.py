@@ -11,6 +11,8 @@ import platform
 import shutil
 import time
 import DNN_Class_base
+import saveData
+import plotData
 
 
 #  日志记数
@@ -28,9 +30,10 @@ class MY_GUI(object):
 
         self.init_window.title("中石油项目")                  # 窗口名
         self.init_window.geometry('400x400+10+10')          # 290 160为窗口大小，+10 +10 定义窗口弹出时的默认展示位置
+        # self.init_window.geometry('400x450+10+10')          # 290 160为窗口大小，+10 +10 定义窗口弹出时的默认展示位置
         # self.init_window.geometry('1068x681+10+10')
         self.init_window["bg"] = "blue"                     # 窗口背景色，其他背景色见：blog.csdn.net/chl0000/article/details/7657887
-        self.init_window.attributes("-alpha", 0.75)          # 虚化，值越小虚化程度越高
+        self.init_window.attributes("-alpha", 0.8)          # 虚化，值越小虚化程度越高
         self.type2numeric = type2numeric
 
     # 设置窗口
@@ -68,6 +71,9 @@ class MY_GUI(object):
 
         self.Decay2lr_label = TK.Label(self.init_window, text="学习率衰减")
         self.Decay2lr_label.grid(row=17, column=0)
+
+        self.path2data_label = TK.Label(self.init_window, text="训练数据路径")
+        self.path2data_label.grid(row=19, column=0)
 
         # 文本框
         self.str2DNN = TK.StringVar(self.init_window)
@@ -107,31 +113,39 @@ class MY_GUI(object):
         self.dim2out_Text = TK.Entry(self.init_window, width=20, textvariable=self.int2out_dim)  # 输出维度
         self.dim2out_Text.grid(row=9, column=2)
 
-        int2Max_Epoch = TK.IntVar()
-        int2Max_Epoch.set(10000)      # 默认 10000
-        self.maxEpoch_Text = TK.Entry(self.init_window, width=20, textvariable=int2Max_Epoch)  # 最大迭代次数
+        self.int2Max_Epoch = TK.IntVar()
+        self.int2Max_Epoch.set(10000)      # 默认 10000
+        self.maxEpoch_Text = TK.Entry(self.init_window, width=20, textvariable=self.int2Max_Epoch)  # 最大迭代次数
         self.maxEpoch_Text.grid(row=11, column=2)
 
-        int2BatchSize = TK.IntVar()
-        int2BatchSize.set(16)      # 默认 10000
-        self.BatchSize_Text = TK.Entry(self.init_window, width=20, textvariable=int2BatchSize)  # 批量大小
+        self.int2BatchSize = TK.IntVar()
+        self.int2BatchSize.set(16)      # 默认 10000
+        self.BatchSize_Text = TK.Entry(self.init_window, width=20, textvariable=self.int2BatchSize)  # 批量大小
         self.BatchSize_Text.grid(row=13, column=2)
 
-        double2lr = TK.DoubleVar()
-        double2lr.set(0.01)  # 默认 10000
-        self.learning_rate_Text = TK.Entry(self.init_window, width=20, textvariable=double2lr)  # 学习率
+        self.double2lr = TK.DoubleVar()
+        self.double2lr.set(0.01)  # 默认 10000
+        self.learning_rate_Text = TK.Entry(self.init_window, width=20, textvariable=self.double2lr)  # 学习率
         self.learning_rate_Text.grid(row=15, column=2)
 
-        double2lr_decay = TK.DoubleVar()
-        double2lr_decay.set(0.001)  # 默认 10000
-        self.decay2lr_Text = TK.Entry(self.init_window, width=20, textvariable=double2lr_decay)  # 学习率衰减
+        self.double2lr_decay = TK.DoubleVar()
+        self.double2lr_decay.set(0.001)  # 默认 10000
+        self.decay2lr_Text = TK.Entry(self.init_window, width=20, textvariable=self.double2lr_decay)  # 学习率衰减
         self.decay2lr_Text.grid(row=17, column=2)
 
-        self.button2Init = TK.Button(self.init_window, text='初始化参数', command=self.get_print_log_parameters)
-        self.button2Init.grid(row=19, column=2)
+        self.str_path2data = TK.StringVar()
+        self.str_path2data.set('data/..')
+        self.path2data_Text = TK.Entry(self.init_window, width=25, textvariable=self.str_path2data)  # 学习率衰减
+        self.path2data_Text.grid(row=19, column=2)
 
-        self.button2Start = TK.Button(self.init_window, text='开始训练', command=self.train_model)
-        self.button2Start.grid(row=22, column=2)
+        button2Init = TK.Button(self.init_window, text='初始化参数和网络', command=self.get_print_log_parameters)
+        button2Init.grid(row=22, column=2)
+
+        button2Start = TK.Button(self.init_window, text='开始训练', command=self.train_test_model)
+        button2Start.grid(row=25, column=2)
+
+        button2End = TK.Button(self.init_window, text='测试网络', command=self.evalue_model)
+        button2End.grid(row=28, column=2)
 
         # self.button2Start.grid(row=22, column=2, rowspan=25, columnspan=5)
         # columnspan选项可以指定控件跨越多列显示，而rowspan选项同样可以指定控件跨越多行显示。
@@ -150,7 +164,7 @@ class MY_GUI(object):
                 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
         # ------------------------------------------- 文件保存路径设置 ----------------------------------------
-        store_file = 'VMD'
+        store_file = 'ZSY'
         BASE_DIR = os.path.dirname(os.path.abspath(__file__))
         sys.path.append(BASE_DIR)
         OUT_DIR = os.path.join(BASE_DIR, store_file)
@@ -174,6 +188,8 @@ class MY_GUI(object):
 
         if not os.path.exists(FolderName):  # 判断路径是否已经存在
             os.mkdir(FolderName)  # 无 log_out_path 路径，创建一个 log_out_path 路径
+
+        self.Name2Folder = FolderName
 
         outfile_name1 = '%s%s.txt' % ('log2', 'train')
         log_fileout = open(os.path.join(FolderName, outfile_name1), 'w')  # 在这个路径下创建并打开一个可写的 log_train.txt文件
@@ -200,6 +216,9 @@ class MY_GUI(object):
         log_string('Max epoch: %s\n' % str(self.maxEpoch_Text.get()), log_fileout)
 
         log_string('Batch-size: %s\n' % str(self.BatchSize_Text.get()), log_fileout)
+
+        data_path = self.str_path2data.get()
+        print('data_path:', data_path)
 
         record_list = []
         list2hidden = []
@@ -251,24 +270,134 @@ class MY_GUI(object):
                 actName2in=self.str2act_In.get(), actName=self.str2act_Hidden.get(), actName2out=self.str2act_Out.get(),
                 type2float=self.type2numeric, scope2W='Ws', scope2B='Bs', repeat_high_freq=False)
 
-    def train_model(self):
+    def train_test_model(self, loss_type='l2loss'):
         print('Train model')
-        freqs = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        freqs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+        penalty2WB = 0.001
+        region_l = 0.0
+        region_r = 1.0
+        batchsize_test = 100
         global_steps = tf.compat.v1.Variable(0, trainable=False)
         with tf.device('/gpu:%s' % (0)):
             with tf.compat.v1.variable_scope('vscope', reuse=tf.compat.v1.AUTO_REUSE):
-                X_it = tf.compat.v1.placeholder(tf.float32, name='X_it', shape=[None, self.dim2in_Text.get()])  # * 行 1 列
+                X_train = tf.compat.v1.placeholder(tf.float32, name='X_train', shape=[None, self.int2in_dim.get()])
+                X_test = tf.compat.v1.placeholder(tf.float32, name='X_test', shape=[None, self.int2in_dim.get()])
+                y_label = tf.compat.v1.placeholder(tf.float32, name='y_label', shape=[None, self.int2out_dim.get()])
                 in_learning_rate = tf.compat.v1.placeholder_with_default(input=1e-5, shape=[], name='lr')
-                y_out = self.DNN(X_it, scale=freqs, sFourier=1.0)
+
+                y_train = self.DNN(X_train, scale=freqs, sFourier=1.0)
+
+                if loss_type == 'l2loss':
+                    Loss2NN = tf.reduce_mean(tf.square(y_train - y_label))
+                elif loss_type == 'lncosh_loss':
+                    Loss2NN = tf.reduce_mean(tf.log(tf.cosh(y_train - y_label)))
+
+                regularSum2WB = self.DNN.get_regular_sum2WB(regular_model='L1')
+                PWB = penalty2WB * regularSum2WB
+
+                Loss2NN = Loss2NN + PWB
+
+                my_optimizer = tf.train.AdamOptimizer(in_learning_rate)
+                train_Loss2NN = my_optimizer.minimize(Loss2NN, global_step=global_steps)
+
+                train_mse_NN = tf.reduce_mean(tf.square(y_train - y_label))
+                train_rel_NN = train_mse_NN / tf.reduce_mean(tf.square(y_label))
                 print('------Train model------')
+                y_test = self.DNN(X_train, scale=freqs, sFourier=1.0)
+
+        t0 = time.time()
+        loss2y_all, loss_all, train_mse_all, train_rel_all = [], [], [], []
+        test_mse_all, test_rel_all = [], []
+        test_epoch = []
+
+        test_x_bach = np.reshape(np.linspace(region_l, region_r, num=batchsize_test), [-1, 1])
+        saveData.save_testData_or_solus2mat(test_x_bach, dataName='testx', outPath=self.Name2Folder)
+
+        # ConfigProto 加上allow_soft_placement=True就可以使用 gpu 了
+        config = tf.compat.v1.ConfigProto(allow_soft_placement=True)  # 创建sess的时候对sess进行参数配置
+        config.gpu_options.allow_growth = True  # True是让TensorFlow在运行过程中动态申请显存，避免过多的显存占用。
+        config.allow_soft_placement = True  # 当指定的设备不存在时，允许选择一个存在的设备运行。比如gpu不存在，自动降到cpu上运行
+        with tf.compat.v1.Session(config=config) as sess:
+            sess.run(tf.global_variables_initializer())
+            tmp_lr = init_learning_rate
+
+            for i_epoch in range(R['max_epoch'] + 1):
+                x_it_batch = DNN_data.rand_it(batchsize, input_dim, region_a=region_l, region_b=region_r)
+                xl_bd_batch, xr_bd_batch = DNN_data.rand_bd_1D(batchsize_bd, input_dim, region_a=region_l,
+                                                               region_b=region_r)
+                tmp_lr = tmp_lr * (1 - lr_decay)
+                if R['activate_penalty2bd_increase'] == 1:
+                    if i_epoch < int(R['max_epoch'] / 10):
+                        temp_penalty2bd = init_bd_penalty
+                    elif i_epoch < int(R['max_epoch'] / 5):
+                        temp_penalty2bd = 10 * init_bd_penalty
+                    elif i_epoch < int(R['max_epoch'] / 4):
+                        temp_penalty2bd = 50 * init_bd_penalty
+                    elif i_epoch < int(R['max_epoch'] / 2):
+                        temp_penalty2bd = 100 * init_bd_penalty
+                    elif i_epoch < int(3 * R['max_epoch'] / 4):
+                        temp_penalty2bd = 200 * init_bd_penalty
+                    else:
+                        temp_penalty2bd = 500 * init_bd_penalty
+                else:
+                    temp_penalty2bd = init_bd_penalty
+
+                if R['activate_powSolus_increase'] == 1:
+                    if i_epoch < int(R['max_epoch'] / 10):
+                        temp_penalty2orth = init_ortho_penalty
+                    elif i_epoch < int(R['max_epoch'] / 5):
+                        temp_penalty2orth = 10 * init_ortho_penalty
+                    elif i_epoch < int(R['max_epoch'] / 4):
+                        temp_penalty2orth = 50 * init_ortho_penalty
+                    elif i_epoch < int(R['max_epoch'] / 2):
+                        temp_penalty2orth = 100 * init_ortho_penalty
+                    elif i_epoch < int(3 * R['max_epoch'] / 4):
+                        temp_penalty2orth = 200 * init_ortho_penalty
+                    else:
+                        temp_penalty2orth = 500 * init_ortho_penalty
+                else:
+                    temp_penalty2orth = init_ortho_penalty
+
+                _, loss_it_nn, loss_nn, udu_nn, train_mse_nn, train_rel_nn, pwb = sess.run(
+                    [train_Loss2NN, Loss_it2NNs, Loss2NN, UNN_dot_UNN, train_mse_NN, train_rel_NN, PWB],
+                    feed_dict={X_it: x_it_batch, X_left: xl_bd_batch, X_right: xr_bd_batch, in_learning_rate: tmp_lr,
+                               ortho_penalty: temp_penalty2orth, bd_penalty: temp_penalty2bd})
+                loss_it_all.append(loss_it_nn)
+                loss_all.append(loss_nn)
+                loss_udu_all.append(udu_nn)
+                train_mse_all.append(train_mse_nn)
+                train_rel_all.append(train_rel_nn)
+
+                if i_epoch % 1000 == 0:
+                    run_times = time.time() - t0
+                    DNN_Print_Log.print_and_log_train_one_epoch(
+                        i_epoch, run_times, tmp_lr, temp_penalty2orth, pwb, loss_it_nn, loss_nn,
+                        udu_nn, train_mse_nn, train_rel_nn, log_out=log_fileout_NN)
+
+                    # ---------------------------   test network ----------------------------------------------
+                    test_epoch.append(i_epoch / 1000)
+                    u_true2test, utest_nn, unn_normal, unn_scale, unormal_true, uscale_true = sess.run(
+                        [U_true, UNN2test, UNN_Normal2test, UNN_Scale2test, Unormal_true, Uscale_true],
+                        feed_dict={X_it: test_x_bach})
+                    test_mse2nn = np.mean(np.square(u_true2test - utest_nn))
+                    test_mse_all.append(test_mse2nn)
+                    test_rel2nn = test_mse2nn / np.mean(np.square(u_true2test))
+                    test_rel_all.append(test_rel2nn)
+
+                    DNN_tools.print_and_log_test_one_epoch(test_mse2nn, test_rel2nn, log_out=log_fileout_NN)
 
     def evalue_model(self):
         print('Test model')
+        freqs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+        with tf.device('/gpu:%s' % (0)):
+            with tf.compat.v1.variable_scope('vscope', reuse=tf.compat.v1.AUTO_REUSE):
+                X_it = tf.compat.v1.placeholder(tf.float32, name='X_it2test', shape=[None, self.int2in_dim.get()])  # * 行 1 列
+                y_pre = self.DNN(X_it, scale=freqs, sFourier=1.0)
 
 
 if __name__ == '__main__':
     gui_window = TK.Tk()              # 实例化出一个父窗口
-    ZMJ_PORTAL = MY_GUI(gui_window)
+    ZMJ_PORTAL = MY_GUI(gui_window)   # 初始化窗口
 
     ZMJ_PORTAL.set_init_window()      # 设置根窗口默认属性
 

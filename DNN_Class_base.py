@@ -828,7 +828,7 @@ class Pure_Dense_Net(object):
             self.Ws.append(Wout)
             self.Bs.append(Bout)
 
-    def get_regular_sum2WB(self, regular_model):
+    def get_regular_sum2WB(self, regular_model='L2'):
         layers = len(self.hidden_units)+1
         if regular_model == 'L1':
             regular_w = 0
