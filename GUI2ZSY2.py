@@ -70,7 +70,7 @@ class MY_GUI(object):
         self.type2numeric = type2numeric
 
     # 设置窗口
-    def set_init_window(self):
+    def set_init_window(self, type2loss='lncoshloss', test_bachsize=200):
         # 标签
         self.name2DNN_label = TK.Label(self.init_window, text="模型名称", width=8)
         self.name2DNN_label.grid(row=0, column=0)
@@ -175,8 +175,8 @@ class MY_GUI(object):
         button2Init.grid(row=22, column=2)
 
         # type2loss = 'l2loss'
-        type2loss = 'lncoshloss'
-        test_bachsize=200
+        # type2loss = 'lncoshloss'
+        # test_bachsize=200
         button2Start = TK.Button(self.init_window, text='开始训练',
                                  command=lambda: self.train_test_model(loss_type=type2loss, batchsize_test=test_bachsize))
         button2Start.grid(row=25, column=2)
@@ -312,9 +312,9 @@ class MY_GUI(object):
 
     # 训练并测试网络
     def train_test_model(self, loss_type='l2loss', batchsize_test=100):
-        # print('Train model')
-        # print('loss_type:', loss_type)
-        # print('batchsize_test:', batchsize_test)
+        print('Train model')
+        print('loss_type:', loss_type)
+        print('batchsize_test:', batchsize_test)
         freqs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
         penalty2WB = 0.001
         global_steps = tf.compat.v1.Variable(0, trainable=False)
@@ -425,9 +425,12 @@ class MY_GUI(object):
 
 
 if __name__ == '__main__':
+    loss_type = 'l2loss'
+    bachsize2test = 200
+
     gui_window = TK.Tk()              # 实例化出一个父窗口
     ZMJ_PORTAL = MY_GUI(gui_window)   # 初始化窗口
 
-    ZMJ_PORTAL.set_init_window()      # 设置根窗口默认属性
+    ZMJ_PORTAL.set_init_window(type2loss=loss_type, test_bachsize=bachsize2test)      # 设置根窗口默认属性
 
     gui_window.mainloop()             # 父窗口进入事件循环，可以理解为保持窗口运行，否则界面不展示
