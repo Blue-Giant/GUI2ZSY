@@ -62,8 +62,8 @@ class MY_GUI(object):
         self.init_window = init_window
 
         self.init_window.title("中石油项目")                  # 窗口名
-        self.init_window.geometry('400x400+10+10')          # 290 160为窗口大小，+10 +10 定义窗口弹出时的默认展示位置
-        # self.init_window.geometry('400x450+10+10')          # 290 160为窗口大小，+10 +10 定义窗口弹出时的默认展示位置
+        # self.init_window.geometry('400x400+10+10')          # 290 160为窗口大小，+10 +10 定义窗口弹出时的默认展示位置
+        self.init_window.geometry('400x450+10+10')          # 290 160为窗口大小，+10 +10 定义窗口弹出时的默认展示位置
         # self.init_window.geometry('1068x681+10+10')
         self.init_window["bg"] = "blue"                     # 窗口背景色，其他背景色见：blog.csdn.net/chl0000/article/details/7657887
         self.init_window.attributes("-alpha", 0.8)          # 虚化，值越小虚化程度越高
@@ -71,6 +71,9 @@ class MY_GUI(object):
 
     # 设置窗口
     def set_init_window(self, type2loss='lncoshloss', test_bachsize=200, freq_scale=None):
+        self.loss_type = type2loss
+        self.bachsize_test = test_bachsize
+        self.freqs = freq_scale
         # 标签
         self.name2DNN_label = TK.Label(self.init_window, text="模型名称", width=8)
         self.name2DNN_label.grid(row=0, column=0)
@@ -171,14 +174,10 @@ class MY_GUI(object):
         self.path2data_Text = TK.Entry(self.init_window, width=25, textvariable=self.str_path2data)  # 数据路径
         self.path2data_Text.grid(row=19, column=2)
 
-        button2Init = TK.Button(self.init_window, text='初始化参数和网络',
-                                command=lambda: self.get_print_log_parameters(loss_type=type2loss,
-                                                                              batchsize_test=test_bachsize))
+        button2Init = TK.Button(self.init_window, text='初始化参数和网络', command=self.get_print_log_parameters)
         button2Init.grid(row=22, column=2)
 
-        button2Start = TK.Button(self.init_window, text='开始训练',
-                                 command=lambda: self.train_test_model(loss_type=type2loss, batchsize_test=test_bachsize,
-                                                                       freqs2DNN=freq_scale))
+        button2Start = TK.Button(self.init_window, text='开始训练', command=self.train_test_model)
         button2Start.grid(row=25, column=2)
 
         # button2End = TK.Button(self.init_window, text='测试网络', command=self.evalue_model)
@@ -188,7 +187,7 @@ class MY_GUI(object):
         # columnspan选项可以指定控件跨越多列显示，而rowspan选项同样可以指定控件跨越多行显示。
 
     # 得到并初始化参数
-    def get_print_log_parameters(self, loss_type='l2loss', batchsize_test=100):
+    def get_print_log_parameters(self):
         num2GPU = 0
         if platform.system() == 'Windows':
             os.environ["CDUA_VISIBLE_DEVICES"] = "%s" % (num2GPU)
@@ -257,12 +256,9 @@ class MY_GUI(object):
 
         log_string('Batch-size for training: %s\n' % str(self.BatchSize_Text.get()), log_fileout)
 
-        log_string('Batch-size for testing: %s\n' % str(batchsize_test), log_fileout)
+        log_string('Batch-size for testing: %s\n' % str(self.bachsize_test), log_fileout)
 
-        log_string('Type for loss function: %s\n' % str(loss_type), log_fileout)
-
-        # data_path = self.str_path2data.get()
-        # print('data_path:', data_path)
+        log_string('Type for loss function: %s\n' % str(self.loss_type), log_fileout)
 
         record_list = []
         list2hidden = []
@@ -315,7 +311,7 @@ class MY_GUI(object):
                 type2float=self.type2numeric, scope2W='Ws', scope2B='Bs', repeat_high_freq=False)
 
     # 训练并测试网络
-    def train_test_model(self, loss_type='l2loss', batchsize_test=100, freqs2DNN=None):
+    def train_test_model(self):
         # print('Train model')
         # print('loss_type:', loss_type)
         # print('batchsize_test:', batchsize_test)
@@ -329,11 +325,11 @@ class MY_GUI(object):
                 Y_label2train = tf.compat.v1.placeholder(tf.float32, name='Y_label2train', shape=[None, self.int2out_dim.get()])
                 in_learning_rate = tf.compat.v1.placeholder_with_default(input=1e-5, shape=[], name='lr')
 
-                YNN_train = self.DNN(X_train, scale=freqs2DNN, sFourier=1.0)
+                YNN_train = self.DNN(X_train, scale=self.freqs, sFourier=1.0)
 
-                if loss_type == 'l2loss' or loss_type == 'l2_loss':
+                if 'l2loss' == self.loss_type or 'l2_loss' == self.loss_type:
                     Loss2YNN = tf.reduce_mean(tf.square(YNN_train - Y_label2train))
-                elif loss_type == 'lncosh_loss' or loss_type == 'lncoshloss':
+                elif self.loss_type == 'lncosh_loss' or self.loss_type == 'lncoshloss':
                     Loss2YNN = tf.reduce_mean(tf.log(tf.cosh(YNN_train - Y_label2train)))
                 else:
                     raise IndexError('No loss')
@@ -349,27 +345,29 @@ class MY_GUI(object):
                 train_mse_NN = tf.reduce_mean(tf.square(YNN_train - Y_label2train))
                 train_rel_NN = train_mse_NN / tf.reduce_mean(tf.square(Y_label2train))
 
-                YNN_test = self.DNN(X_train, scale=freqs2DNN, sFourier=1.0)
+                YNN_test = self.DNN(X_train, scale=self.freqs, sFourier=1.0)
 
         t0 = time.time()
         loss2y_all, loss_all, train_mse_all, train_rel_all = [], [], [], []
         test_mse_all, test_rel_all = [], []
         test_epoch = []
 
-        # filename = 'data2csv/Wuhan.csv'
-        # filename = 'data2csv/Italia_data.csv'
-        filename = 'data2csv/Korea_data.csv'
-        # filename = 'data2csv/minnesota.csv'
+        data_path = self.str_path2data.get()
+        print('data_path:', data_path)
 
-        date, data2I, data2S = DNN_data.load_2csvData_cal_S(datafile=filename, total_population=R['total_population'])
+        # filename = 'data/Wuhan.csv'
+        # filename = 'data/Italia_data.csv'
+        filename = 'data/Korea_data.csv'
+        # filename = 'data/minnesota.csv'
 
-        assert (trainSet_szie + batchSize_test <= len(data2I))
+        date, data2I, data2S = DNN_data.load_2csvData_cal_S(datafile=filename, total_population=1000000)
+
+        assert (self.int2in_dim.get() + self.bachsize_test <= len(data2I))
         train_date, train_data2i, train_data2s, test_date, test_data2i, test_data2s = \
-            DNN_data.split_3csvData2train_test(date, data2I, data2S, size2train=trainSet_szie, normalFactor=1.0)
-        nbatch2train = np.ones(batchSize_train, dtype=np.float32) * float(R['total_population'])
+            DNN_data.split_3csvData2train_test(date, data2I, data2S, size2train=self.int2in_dim.get(), normalFactor=1.0)
 
         # 对于时间数据来说，验证模型的合理性，要用连续的时间数据验证.
-        test_t_bach = DNN_data.sample_testDays_serially(test_date, batchsize_test)
+        test_t_bach = DNN_data.sample_testDays_serially(test_date, self.bachsize_test)
 
         # ConfigProto 加上allow_soft_placement=True就可以使用 gpu 了
         config = tf.compat.v1.ConfigProto(allow_soft_placement=True)  # 创建sess的时候对sess进行参数配置
@@ -380,10 +378,9 @@ class MY_GUI(object):
             tmp_lr = self.double2lr.get()
 
             for i_epoch in range(self.int2Max_Epoch.get() + 1):
-                t_batch, i_obs, s_obs = \
-                    DNN_data.randSample_Normalize_3existData(train_date, train_data2i, train_data2s,
-                                                             batchsize=self.int2in_dim.get(),
-                                                             normalFactor=1.0, sampling_opt=R['opt2sample'])
+                t_batch, i_obs = \
+                    DNN_data.randSample_Normalize_existData(train_date, train_data2i, batchsize=self.int2in_dim.get(),
+                                                            normalFactor=1.0, sampling_opt='random_sample')
                 tmp_lr = tmp_lr * (1 - self.double2lr_decay.get())
 
                 _, loss_ynn, loss_nn, train_mse_nn, train_rel_nn, pwb = sess.run(
@@ -443,13 +440,13 @@ class MY_GUI(object):
 
 
 if __name__ == '__main__':
-    loss_type = 'l2loss'
-    bachsize2test = 200
+    loss_name = 'l2loss'
+    bachsize2test = 20
     freqs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 
     gui_window = TK.Tk()              # 实例化出一个父窗口
     ZMJ_PORTAL = MY_GUI(gui_window)   # 初始化窗口
 
-    ZMJ_PORTAL.set_init_window(type2loss=loss_type, test_bachsize=bachsize2test, freq_scale=freqs)      # 设置根窗口默认属性
+    ZMJ_PORTAL.set_init_window(type2loss=loss_name, test_bachsize=bachsize2test, freq_scale=freqs)      # 设置根窗口默认属性
 
     gui_window.mainloop()             # 父窗口进入事件循环，可以理解为保持窗口运行，否则界面不展示
