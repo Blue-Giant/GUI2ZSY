@@ -175,7 +175,7 @@ class MY_GUI(object):
         button2Init.grid(row=22, column=2)
 
         # type2loss = 'l2loss'
-        type2loss = 'lnchshloss'
+        type2loss = 'lncoshloss'
         test_bachsize=200
         button2Start = TK.Button(self.init_window, text='开始训练',
                                  command=lambda: self.train_test_model(loss_type=type2loss, batchsize_test=test_bachsize))
