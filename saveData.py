@@ -5,6 +5,19 @@
 import scipy.io as scio
 
 
+def save_trainLoss2mat(loss_it, loss, actName=None, outPath=None):
+    # if actName == 's2ReLU':
+    #     outFile2data = '%s/Loss2s2ReLU.mat' % (outPath)
+    # if actName == 'sReLU':
+    #     outFile2data = '%s/Loss2sReLU.mat' % (outPath)
+    # if actName == 'ReLU':
+    #     outFile2data = '%s/Loss2ReLU.mat' % (outPath)
+    outFile2data = '%s/Loss2%s.mat' % (outPath, actName)
+    key2mat_1 = 'loss_it'
+    key2mat_3 = 'loss'
+    scio.savemat(outFile2data, {key2mat_1: loss_it, key2mat_3: loss})
+
+
 def save_trainLoss2mat_1actFunc(loss_it, loss_bd, loss, actName=None, outPath=None):
     # if actName == 's2ReLU':
     #     outFile2data = '%s/Loss2s2ReLU.mat' % (outPath)

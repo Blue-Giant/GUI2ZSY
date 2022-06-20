@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+"""
+@author: li Xi'an（李西安）
+ Date: 2022 年 5 月 31 日
+"""
 import tkinter as TK
 import os
 import sys
@@ -11,16 +14,46 @@ import platform
 import shutil
 import time
 import DNN_Class_base
+import DNN_data
 import saveData
 import plotData
 
 
-#  日志记数
+#  日志记数函数
 def log_string(out_str, log_out):
     log_out.write(out_str + '\n')  # 将字符串写到文件log_fileout中去，末尾加换行
     log_out.flush()                # 清空缓存区
     # flush() 方法是用来刷新缓冲区的，即将缓冲区中的数据立刻写入文件，同时清空缓冲区，不需要是被动的等待输出缓冲区写入。
     # 一般情况下，文件关闭后会自动刷新缓冲区，但有时你需要在关闭前刷新它，这时就可以使用 flush() 方法。
+
+
+# 打印并记录训练过程的结果
+def print_and_log_train_one_epoch(i_epoch, run_time, learn_rate, pwb, loss_ynn_tmp, loss_tmp, train_mse_tmp,
+                                  train_res_tmp, log_out=None):
+    # 将运行结果打印出来
+    print('train epoch: %d, time: %.3f' % (i_epoch, run_time))
+    print('learning rate: %.10f' % learn_rate)
+    print('weights and biases with  penalty: %.10f' % pwb)
+    print('loss for training: %.10f' % loss_tmp)
+    print('solution mean square error for training: %.10f' % train_mse_tmp)
+    print('solution residual error for training: %.10f\n' % train_res_tmp)
+
+    log_string('train epoch: %d,time: %.10f' % (i_epoch, run_time), log_out)
+    log_string('learning rate: %.10f' % learn_rate, log_out)
+    log_string('weights and biases with  penalty: %.10f' % pwb, log_out)
+    log_string('loss for training: %.10f' % loss_tmp, log_out)
+    log_string('solution mean square error for training: %.10f' % train_mse_tmp, log_out)
+    log_string('solution residual error for training: %.10f\n' % train_res_tmp, log_out)
+
+
+# 打印并记录测试结果
+def print_and_log_test_one_epoch(mse2test, res2test, log_out=None):
+    # 将运行结果打印出来
+    print('mean square error of predict and real for testing: %.10f' % mse2test)
+    print('residual error of predict and real for testing: %.10f\n' % res2test)
+
+    log_string('mean square error of predict and real for testing: %.10f' % mse2test, log_out)
+    log_string('residual error of predict and real for testing: %.10f\n\n' % res2test, log_out)
 
 
 class MY_GUI(object):
@@ -63,7 +96,7 @@ class MY_GUI(object):
         self.maxEpoch_label = TK.Label(self.init_window, text="最大迭代轮数")
         self.maxEpoch_label.grid(row=11, column=0)
 
-        self.batchSize_label = TK.Label(self.init_window, text="批量大小")
+        self.batchSize_label = TK.Label(self.init_window, text="训练批量大小")
         self.batchSize_label.grid(row=13, column=0)
 
         self.learning_rate_label = TK.Label(self.init_window, text="初始学习率")
@@ -120,7 +153,7 @@ class MY_GUI(object):
 
         self.int2BatchSize = TK.IntVar()
         self.int2BatchSize.set(16)      # 默认 10000
-        self.BatchSize_Text = TK.Entry(self.init_window, width=20, textvariable=self.int2BatchSize)  # 批量大小
+        self.BatchSize_Text = TK.Entry(self.init_window, width=20, textvariable=self.int2BatchSize)  # 训练批量大小
         self.BatchSize_Text.grid(row=13, column=2)
 
         self.double2lr = TK.DoubleVar()
@@ -135,21 +168,26 @@ class MY_GUI(object):
 
         self.str_path2data = TK.StringVar()
         self.str_path2data.set('data/..')
-        self.path2data_Text = TK.Entry(self.init_window, width=25, textvariable=self.str_path2data)  # 学习率衰减
+        self.path2data_Text = TK.Entry(self.init_window, width=25, textvariable=self.str_path2data)  # 数据路径
         self.path2data_Text.grid(row=19, column=2)
 
         button2Init = TK.Button(self.init_window, text='初始化参数和网络', command=self.get_print_log_parameters)
         button2Init.grid(row=22, column=2)
 
-        button2Start = TK.Button(self.init_window, text='开始训练', command=self.train_test_model)
+        # type2loss = 'l2loss'
+        type2loss = 'lnchshloss'
+        test_bachsize=200
+        button2Start = TK.Button(self.init_window, text='开始训练',
+                                 command=lambda: self.train_test_model(loss_type=type2loss, batchsize_test=test_bachsize))
         button2Start.grid(row=25, column=2)
 
-        button2End = TK.Button(self.init_window, text='测试网络', command=self.evalue_model)
-        button2End.grid(row=28, column=2)
+        # button2End = TK.Button(self.init_window, text='测试网络', command=self.evalue_model)
+        # button2End.grid(row=28, column=2)
 
         # self.button2Start.grid(row=22, column=2, rowspan=25, columnspan=5)
         # columnspan选项可以指定控件跨越多列显示，而rowspan选项同样可以指定控件跨越多行显示。
 
+    # 得到并初始化参数
     def get_print_log_parameters(self):
         num2GPU = 0
         if platform.system() == 'Windows':
@@ -193,6 +231,7 @@ class MY_GUI(object):
 
         outfile_name1 = '%s%s.txt' % ('log2', 'train')
         log_fileout = open(os.path.join(FolderName, outfile_name1), 'w')  # 在这个路径下创建并打开一个可写的 log_train.txt文件
+        self.log_outfile = log_fileout
 
         name2model = self.str2DNN.get()
         log_string('Name for Network model: %s\n' % str(name2model), log_fileout)
@@ -270,40 +309,42 @@ class MY_GUI(object):
                 actName2in=self.str2act_In.get(), actName=self.str2act_Hidden.get(), actName2out=self.str2act_Out.get(),
                 type2float=self.type2numeric, scope2W='Ws', scope2B='Bs', repeat_high_freq=False)
 
-    def train_test_model(self, loss_type='l2loss'):
-        print('Train model')
+    # 训练并测试网络
+    def train_test_model(self, loss_type='l2loss', batchsize_test=100):
+        # print('Train model')
+        # print('loss_type:', loss_type)
+        # print('batchsize_test:', batchsize_test)
         freqs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
         penalty2WB = 0.001
-        region_l = 0.0
-        region_r = 1.0
-        batchsize_test = 100
         global_steps = tf.compat.v1.Variable(0, trainable=False)
         with tf.device('/gpu:%s' % (0)):
             with tf.compat.v1.variable_scope('vscope', reuse=tf.compat.v1.AUTO_REUSE):
                 X_train = tf.compat.v1.placeholder(tf.float32, name='X_train', shape=[None, self.int2in_dim.get()])
                 X_test = tf.compat.v1.placeholder(tf.float32, name='X_test', shape=[None, self.int2in_dim.get()])
-                y_label = tf.compat.v1.placeholder(tf.float32, name='y_label', shape=[None, self.int2out_dim.get()])
+                Y_label2train = tf.compat.v1.placeholder(tf.float32, name='Y_label2train', shape=[None, self.int2out_dim.get()])
                 in_learning_rate = tf.compat.v1.placeholder_with_default(input=1e-5, shape=[], name='lr')
 
-                y_train = self.DNN(X_train, scale=freqs, sFourier=1.0)
+                YNN_train = self.DNN(X_train, scale=freqs, sFourier=1.0)
 
-                if loss_type == 'l2loss':
-                    Loss2NN = tf.reduce_mean(tf.square(y_train - y_label))
-                elif loss_type == 'lncosh_loss':
-                    Loss2NN = tf.reduce_mean(tf.log(tf.cosh(y_train - y_label)))
+                if loss_type == 'l2loss' or loss_type == 'l2_loss':
+                    Loss2YNN = tf.reduce_mean(tf.square(YNN_train - Y_label2train))
+                elif loss_type == 'lncosh_loss' or loss_type == 'lncoshloss':
+                    Loss2YNN = tf.reduce_mean(tf.log(tf.cosh(YNN_train - Y_label2train)))
+                else:
+                    raise IndexError('No loss')
 
                 regularSum2WB = self.DNN.get_regular_sum2WB(regular_model='L1')
                 PWB = penalty2WB * regularSum2WB
 
-                Loss2NN = Loss2NN + PWB
+                Loss2All = Loss2YNN + PWB
 
                 my_optimizer = tf.train.AdamOptimizer(in_learning_rate)
-                train_Loss2NN = my_optimizer.minimize(Loss2NN, global_step=global_steps)
+                train_Loss2NN = my_optimizer.minimize(Loss2All, global_step=global_steps)
 
-                train_mse_NN = tf.reduce_mean(tf.square(y_train - y_label))
-                train_rel_NN = train_mse_NN / tf.reduce_mean(tf.square(y_label))
-                print('------Train model------')
-                y_test = self.DNN(X_train, scale=freqs, sFourier=1.0)
+                train_mse_NN = tf.reduce_mean(tf.square(YNN_train - Y_label2train))
+                train_rel_NN = train_mse_NN / tf.reduce_mean(tf.square(Y_label2train))
+
+                YNN_test = self.DNN(X_train, scale=freqs, sFourier=1.0)
 
         t0 = time.time()
         loss2y_all, loss_all, train_mse_all, train_rel_all = [], [], [], []
@@ -319,80 +360,68 @@ class MY_GUI(object):
         config.allow_soft_placement = True  # 当指定的设备不存在时，允许选择一个存在的设备运行。比如gpu不存在，自动降到cpu上运行
         with tf.compat.v1.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
-            tmp_lr = init_learning_rate
+            tmp_lr = self.double2lr.get()
 
-            for i_epoch in range(R['max_epoch'] + 1):
-                x_it_batch = DNN_data.rand_it(batchsize, input_dim, region_a=region_l, region_b=region_r)
-                xl_bd_batch, xr_bd_batch = DNN_data.rand_bd_1D(batchsize_bd, input_dim, region_a=region_l,
-                                                               region_b=region_r)
-                tmp_lr = tmp_lr * (1 - lr_decay)
-                if R['activate_penalty2bd_increase'] == 1:
-                    if i_epoch < int(R['max_epoch'] / 10):
-                        temp_penalty2bd = init_bd_penalty
-                    elif i_epoch < int(R['max_epoch'] / 5):
-                        temp_penalty2bd = 10 * init_bd_penalty
-                    elif i_epoch < int(R['max_epoch'] / 4):
-                        temp_penalty2bd = 50 * init_bd_penalty
-                    elif i_epoch < int(R['max_epoch'] / 2):
-                        temp_penalty2bd = 100 * init_bd_penalty
-                    elif i_epoch < int(3 * R['max_epoch'] / 4):
-                        temp_penalty2bd = 200 * init_bd_penalty
-                    else:
-                        temp_penalty2bd = 500 * init_bd_penalty
-                else:
-                    temp_penalty2bd = init_bd_penalty
+            for i_epoch in range(self.int2Max_Epoch.get() + 1):
+                x_train_batch = DNN_data.rand_it(self.int2BatchSize.get(), self.int2in_dim.get(), region_a=region_l,
+                                                 region_b=region_r)
+                tmp_lr = tmp_lr * (1 - self.double2lr_decay.get())
 
-                if R['activate_powSolus_increase'] == 1:
-                    if i_epoch < int(R['max_epoch'] / 10):
-                        temp_penalty2orth = init_ortho_penalty
-                    elif i_epoch < int(R['max_epoch'] / 5):
-                        temp_penalty2orth = 10 * init_ortho_penalty
-                    elif i_epoch < int(R['max_epoch'] / 4):
-                        temp_penalty2orth = 50 * init_ortho_penalty
-                    elif i_epoch < int(R['max_epoch'] / 2):
-                        temp_penalty2orth = 100 * init_ortho_penalty
-                    elif i_epoch < int(3 * R['max_epoch'] / 4):
-                        temp_penalty2orth = 200 * init_ortho_penalty
-                    else:
-                        temp_penalty2orth = 500 * init_ortho_penalty
-                else:
-                    temp_penalty2orth = init_ortho_penalty
-
-                _, loss_it_nn, loss_nn, udu_nn, train_mse_nn, train_rel_nn, pwb = sess.run(
-                    [train_Loss2NN, Loss_it2NNs, Loss2NN, UNN_dot_UNN, train_mse_NN, train_rel_NN, PWB],
-                    feed_dict={X_it: x_it_batch, X_left: xl_bd_batch, X_right: xr_bd_batch, in_learning_rate: tmp_lr,
-                               ortho_penalty: temp_penalty2orth, bd_penalty: temp_penalty2bd})
-                loss_it_all.append(loss_it_nn)
+                _, loss_ynn, loss_nn, train_mse_nn, train_rel_nn, pwb = sess.run(
+                    [train_Loss2NN, Loss2All, Loss2YNN, train_mse_NN, train_rel_NN, PWB],
+                    feed_dict={X_train: x_train_batch, Y_label2train: train_ylabel_batch, in_learning_rate: tmp_lr})
+                loss2y_all.append(loss_ynn)
                 loss_all.append(loss_nn)
-                loss_udu_all.append(udu_nn)
                 train_mse_all.append(train_mse_nn)
                 train_rel_all.append(train_rel_nn)
 
                 if i_epoch % 1000 == 0:
                     run_times = time.time() - t0
-                    DNN_Print_Log.print_and_log_train_one_epoch(
-                        i_epoch, run_times, tmp_lr, temp_penalty2orth, pwb, loss_it_nn, loss_nn,
-                        udu_nn, train_mse_nn, train_rel_nn, log_out=log_fileout_NN)
+                    print_and_log_train_one_epoch(i_epoch, run_times, tmp_lr, pwb, loss_ynn, loss_nn, train_mse_nn,
+                                                  train_rel_nn, log_out=self.log_outfile)
 
                     # ---------------------------   test network ----------------------------------------------
                     test_epoch.append(i_epoch / 1000)
-                    u_true2test, utest_nn, unn_normal, unn_scale, unormal_true, uscale_true = sess.run(
-                        [U_true, UNN2test, UNN_Normal2test, UNN_Scale2test, Unormal_true, Uscale_true],
-                        feed_dict={X_it: test_x_bach})
-                    test_mse2nn = np.mean(np.square(u_true2test - utest_nn))
+                    ynn2test = sess.run([YNN_test], feed_dict={X_test: test_x_bach})
+                    test_mse2nn = np.mean(np.square(ynn2test - test_ylabel_batch))
                     test_mse_all.append(test_mse2nn)
-                    test_rel2nn = test_mse2nn / np.mean(np.square(u_true2test))
+                    test_rel2nn = test_mse2nn / np.mean(np.square(test_ylabel_batch))
                     test_rel_all.append(test_rel2nn)
 
-                    DNN_tools.print_and_log_test_one_epoch(test_mse2nn, test_rel2nn, log_out=log_fileout_NN)
+                    print_and_log_test_one_epoch(test_mse2nn, test_rel2nn, log_out=self.log_outfile)
 
-    def evalue_model(self):
+        # -----------------------  save training results to mat files, then plot them ---------------------------------
+        saveData.save_trainLoss2mat(loss_it_all, loss_all, actName=act_func2Normal, outPath=R['FolderName'])
+
+        saveData.save_train_MSE_REL2mat(train_mse_all, train_rel_all, actName=act_func2Normal, outPath=R['FolderName'])
+
+        plotData.plotTrain_loss_1act_func(loss_it_all, lossType='loss_it', seedNo=R['seed'],
+                                          outPath=R['FolderName'], yaxis_scale=True)
+        plotData.plotTrain_loss_1act_func(loss_all, lossType='loss', seedNo=R['seed'], outPath=R['FolderName'],
+                                          yaxis_scale=True)
+
+        plotData.plotTrain_MSE_REL_1act_func(train_mse_all, train_rel_all, actName=act_func2Scale, seedNo=R['seed'],
+                                             outPath=R['FolderName'], yaxis_scale=True)
+
+        # ----------------------  save testing results to mat files, then plot them --------------------------------
+        saveData.save_testData_or_solus2mat(u_true2test, dataName='Utrue', outPath=R['FolderName'])
+        saveData.save_testData_or_solus2mat(utest_nn, dataName=act_func2Normal, outPath=R['FolderName'])
+        plotData.plot_2solutions2test(u_true2test, utest_nn, coord_points2test=test_x_bach,
+                                      batch_size2test=batchsize_test,
+                                      seedNo=R['seed'], outPath=R['FolderName'], subfig_type=0, scatter_fig=False,
+                                      actName='test')
+
+        saveData.save_testMSE_REL2mat(test_mse_all, test_rel_all, actName=act_func2Scale, outPath=R['FolderName'])
+        plotData.plotTest_MSE_REL(test_mse_all, test_rel_all, test_epoch, actName=act_func2Scale, seedNo=R['seed'],
+                                  outPath=R['FolderName'], yaxis_scale=True)
+
+    def evalue_model(self, freqs=None):
         print('Test model')
-        freqs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+        # freqs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
         with tf.device('/gpu:%s' % (0)):
             with tf.compat.v1.variable_scope('vscope', reuse=tf.compat.v1.AUTO_REUSE):
-                X_it = tf.compat.v1.placeholder(tf.float32, name='X_it2test', shape=[None, self.int2in_dim.get()])  # * 行 1 列
-                y_pre = self.DNN(X_it, scale=freqs, sFourier=1.0)
+                X_test = tf.compat.v1.placeholder(tf.float32, name='X_test', shape=[None, self.int2in_dim.get()])
+                y_pre = self.DNN(X_test, scale=freqs, sFourier=1.0)
 
 
 if __name__ == '__main__':
