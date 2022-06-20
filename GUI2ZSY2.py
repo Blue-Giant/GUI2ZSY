@@ -211,6 +211,7 @@ class MY_GUI(object):
             os.mkdir(OUT_DIR)
 
         seed_num = np.random.randint(1e5)
+        self.seed = str(seed_num)
         seed_str = str(seed_num)  # int 型转为字符串型
         FolderName = os.path.join(OUT_DIR, seed_str)  # 路径连接
         if not os.path.exists(FolderName):
@@ -391,29 +392,28 @@ class MY_GUI(object):
                     print_and_log_test_one_epoch(test_mse2nn, test_rel2nn, log_out=self.log_outfile)
 
         # -----------------------  save training results to mat files, then plot them ---------------------------------
-        saveData.save_trainLoss2mat(loss_it_all, loss_all, actName=act_func2Normal, outPath=R['FolderName'])
+        saveData.save_trainLoss2mat(loss2y_all, loss_all, actName=self.str2act_Hidden.get(), outPath=self.log_outfile)
 
-        saveData.save_train_MSE_REL2mat(train_mse_all, train_rel_all, actName=act_func2Normal, outPath=R['FolderName'])
+        saveData.save_train_MSE_REL2mat(train_mse_all, train_rel_all, actName=self.str2act_Hidden.get(), outPath=self.log_outfile)
 
-        plotData.plotTrain_loss_1act_func(loss_it_all, lossType='loss_it', seedNo=R['seed'],
-                                          outPath=R['FolderName'], yaxis_scale=True)
-        plotData.plotTrain_loss_1act_func(loss_all, lossType='loss', seedNo=R['seed'], outPath=R['FolderName'],
+        plotData.plotTrain_loss_1act_func(loss2y_all, lossType='loss_it', seedNo=self.seed, outPath=self.log_outfile,
+                                          yaxis_scale=True)
+        plotData.plotTrain_loss_1act_func(loss_all, lossType='loss', seedNo=self.seed, outPath=self.log_outfile,
                                           yaxis_scale=True)
 
-        plotData.plotTrain_MSE_REL_1act_func(train_mse_all, train_rel_all, actName=act_func2Scale, seedNo=R['seed'],
-                                             outPath=R['FolderName'], yaxis_scale=True)
+        plotData.plotTrain_MSE_REL_1act_func(train_mse_all, train_rel_all, actName=self.str2act_Hidden.get(),
+                                             seedNo=self.seed, outPath=self.log_outfile, yaxis_scale=True)
 
         # ----------------------  save testing results to mat files, then plot them --------------------------------
-        saveData.save_testData_or_solus2mat(u_true2test, dataName='Utrue', outPath=R['FolderName'])
-        saveData.save_testData_or_solus2mat(utest_nn, dataName=act_func2Normal, outPath=R['FolderName'])
-        plotData.plot_2solutions2test(u_true2test, utest_nn, coord_points2test=test_x_bach,
-                                      batch_size2test=batchsize_test,
-                                      seedNo=R['seed'], outPath=R['FolderName'], subfig_type=0, scatter_fig=False,
-                                      actName='test')
+        saveData.save_testData_or_solus2mat(test_ylabel_batch, dataName='Utrue', outPath=self.log_outfile)
+        saveData.save_testData_or_solus2mat(ynn2test, dataName=self.str2act_Hidden.get(), outPath=self.log_outfile)
+        plotData.plot_2solutions2test(test_ylabel_batch, ynn2test, coord_points2test=test_x_bach,
+                                      batch_size2test=batchsize_test, seedNo=self.seed, outPath=self.log_outfile,
+                                      subfig_type=0, scatter_fig=False, actName='test')
 
-        saveData.save_testMSE_REL2mat(test_mse_all, test_rel_all, actName=act_func2Scale, outPath=R['FolderName'])
-        plotData.plotTest_MSE_REL(test_mse_all, test_rel_all, test_epoch, actName=act_func2Scale, seedNo=R['seed'],
-                                  outPath=R['FolderName'], yaxis_scale=True)
+        saveData.save_testMSE_REL2mat(test_mse_all, test_rel_all, actName=self.str2act_Hidden.get(), outPath=self.log_outfile)
+        plotData.plotTest_MSE_REL(test_mse_all, test_rel_all, test_epoch, actName=self.str2act_Hidden.get(),
+                                  seedNo=self.seed, outPath=self.log_outfile, yaxis_scale=True)
 
     def evalue_model(self, freqs=None):
         print('Test model')
