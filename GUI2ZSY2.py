@@ -120,18 +120,18 @@ class MY_GUI(object):
         str_list2act = ['ReLU', 'Leaky_ReLU', 'ELU', 'softplus', 'Tanh', 'Sin', 'sinAddcos', 's2ReLU', 'sReLU', 'mish',
                         'GELU', 'MGELU', 'gauss', 'gcu', 'linear']
         self.str2act_In = TK.StringVar(self.init_window)
-        self.str2act_In.set('ReLU')               # 默认 ReLU
-        self.actIn_Text = TK.OptionMenu(self.init_window, self.str2act_In, *str_list2act)  # 输入层的激活函数
+        self.str2act_In.set('ReLU')                    # 默认 ReLU
+        self.actIn_Text = TK.OptionMenu(self.init_window, self.str2act_In, *str_list2act)          # 输入层的激活函数
         self.actIn_Text.grid(row=1, column=2)
 
         self.str2act_Hidden = TK.StringVar()
-        self.str2act_Hidden.set('ReLU')      # 默认 ReLU
+        self.str2act_Hidden.set('ReLU')               # 默认 ReLU
         self.actHidden_Text = TK.OptionMenu(self.init_window, self.str2act_Hidden, *str_list2act)  # 隐藏层的激活函数
         self.actHidden_Text.grid(row=2, column=2)
 
         self.str2act_Out = TK.StringVar()
-        self.str2act_Out.set('linear')       # 默认 linear
-        self.actOut_Text = TK.OptionMenu(self.init_window, self.str2act_Out, *str_list2act)  # 输出层的激活函数
+        self.str2act_Out.set('linear')                # 默认 linear
+        self.actOut_Text = TK.OptionMenu(self.init_window, self.str2act_Out, *str_list2act)        # 输出层的激活函数
         self.actOut_Text.grid(row=3, column=2)
 
         self.str2Hidden = TK.StringVar()
